@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShortLink — Линк богиносгогч</title>
+<meta name="description" content="Урт линкээ хуулж, богино холбоос аваарай.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #10233f;
+    --blue: #1c4d92;
+    --blue-deep: #12356a;
+    --gold: #e3a53a;
+    --paper: #f5f8fc;
+    --line: #d8e2ef;
+    --ok: #1d7a4f;
+    --err: #b3382f;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Inter", system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .wrap { width: min(680px, 92%); margin: 0 auto; flex: 1; }
+
+  header { padding: 40px 0 8px; display: flex; align-items: center; gap: 10px; }
+  .mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--blue) 55%, var(--gold) 55%);
+    flex: none;
+  }
+  .brand { font-family: "Unbounded", sans-serif; font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; }
+
+  h1 {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.7rem, 5.5vw, 2.6rem);
+    line-height: 1.15;
+    margin: 40px 0 10px;
+  }
+  h1 em { font-style: normal; color: var(--blue); }
+  .lead { color: #4a5b74; font-size: 1.02rem; margin-bottom: 28px; }
+
+  form.card, .result {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: 0 8px 28px rgba(18, 53, 106, .06);
+  }
+  label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: 6px; color: var(--blue-deep); }
+  input[type="url"], input[type="text"] {
+    width: 100%;
+    font: inherit;
+    padding: 13px 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+    color: var(--ink);
+    transition: border-color .15s;
+  }
+  input:focus-visible { outline: none; border-color: var(--blue); }
+  .row { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .row > div { flex: 1 1 180px; }
+
+  button.primary {
+    margin-top: 18px;
+    width: 100%;
+    font: inherit;
+    font-weight: 600;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--blue);
+    color: #fff;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  button.primary:hover { background: var(--blue-deep); }
+  button.primary:active { transform: scale(.99); }
+  button.primary:disabled { opacity: .6; cursor: wait; }
+  button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  .msg { margin-top: 12px; font-size: .9rem; display: none; }
+  .msg.err { display: block; color: var(--err); }
+
+  /* Үр дүн */
+  .result { margin-top: 20px; display: none; }
+  .result.show { display: block; animation: rise .35s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .short-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .short-url {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 500;
+    font-size: clamp(1rem, 3.4vw, 1.3rem);
+    color: var(--blue);
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .short-url:hover { text-decoration: underline; }
+  .copy {
+    font: inherit; font-size: .82rem; font-weight: 600;
+    padding: 8px 14px;
+    border: 1.5px solid var(--blue);
+    border-radius: 8px;
+    background: #fff; color: var(--blue);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .copy:hover { background: var(--blue); color: #fff; }
+  .copy.done { border-color: var(--ok); color: var(--ok); background: #eaf6f0; }
+
+  /* Signature: богиносолтын харьцуулалт */
+  .shrink { margin-top: 20px; }
+  .bar-row { display: grid; grid-template-columns: 52px 1fr 64px; align-items: center; gap: 10px; margin-top: 8px; font-size: .78rem; }
+  .bar-label { color: #64748c; font-weight: 600; }
+  .bar-track { background: var(--paper); border-radius: 99px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; width: 0; transition: width .9s cubic-bezier(.2,.7,.2,1); }
+  .bar-fill.long { background: #b9c8dd; }
+  .bar-fill.short { background: linear-gradient(90deg, var(--blue), var(--gold)); }
+  .bar-count { text-align: right; font-variant-numeric: tabular-nums; color: #4a5b74; }
+  .saved { margin-top: 10px; font-size: .85rem; color: var(--ok); font-weight: 600; }
+
+  .orig { margin-top: 16px; font-size: .82rem; color: #64748c; word-break: break-all; }
+
+  footer { padding: 36px 16px 28px; text-align: center; font-size: .8rem; color: #7c8aa0; }
+  footer p { margin: 0 0 6px; }
+  footer .copyright { font-size: .74rem; color: #93a1b5; max-width: 560px; margin-left: auto; margin-right: auto; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .result.show { animation: none; }
+    .bar-fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="mark" aria-hidden="true"></div>
+      <span class="brand">ShortLink</span>
+    </header>
+
+    <h1>Урт линкээ <em>богино</em> болгоё</h1>
+    <p class="lead">Линкээ хуулж тавиад товч дарахад л хангалттай. Хүсвэл өөрийн нэртэй (alias) холбоос үүсгэж болно.</p>
+
+    <form class="card" id="form">
+      <label for="url">Богиносгох линк</label>
+      <input type="url" id="url" placeholder="https://example.com/маш/урт/линк..." required autocomplete="off">
+      <div class="row">
+        <div>
+          <label for="alias">Alias (заавал биш)</label>
+          <input type="text" id="alias" placeholder="жишээ: minii-link" autocomplete="off"
+                 pattern="[a-zA-Z0-9_\-]{3,30}" title="3-30 тэмдэгт: үсэг, тоо, - ба _">
+        </div>
+      </div>
+      <button class="primary" id="btn" type="submit">Богиносгох</button>
+      <p class="msg err" id="err" role="alert"></p>
+    </form>
+
+    <section class="result" id="result" aria-live="polite">
+      <div class="short-line">
+        <a class="short-url" id="shortUrl" target="_blank" rel="noopener"></a>
+        <button class="copy" id="copyBtn" type="button">Хуулах</button>
+      </div>
+
+      <div class="shrink" aria-hidden="true">
+        <div class="bar-row">
+          <span class="bar-label">Урт</span>
+          <div class="bar-track"><div class="bar-fill long" id="barLong"></div></div>
+          <span class="bar-count" id="cntLong"></span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Богино</span>
+          <div class="bar-track"><div class="bar-fill short" id="barShort"></div></div>
+          <span class="bar-count" id="cntShort"></span>
+        </div>
+      </div>
+      <p class="saved" id="saved"></p>
+      <p class="orig" id="orig"></p>
+    </section>
+  </div>
+
+  <footer>
+    <p>ShortLink · Node.js + SQLite дээр ажиллаж байна</p>
+    <p class="copyright">© 2026 Ц.Энхбат — Зохиогчийн эрхийг эзэмшинэ.</p>
+    <p class="copyright">Энэхүү платформ, дизайн, код болон бүх агуулга нь Ц.Энхбат-ын оюуны өмч юм. Зөвшөөрөлгүй хуулбарлах, тараахыг хориглоно.</p>
+  </footer>
+
+<script>
+  const form = document.getElementById("form");
+  const btn = document.getElementById("btn");
+  const err = document.getElementById("err");
+  const result = document.getElementById("result");
+  const shortUrlEl = document.getElementById("shortUrl");
+  const copyBtn = document.getElementById("copyBtn");
+  const origEl = document.getElementById("orig");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    err.classList.remove("err");
+    err.textContent = "";
+    btn.disabled = true;
+    btn.textContent = "Түр хүлээнэ үү...";
+
+    const url = document.getElementById("url").value.trim();
+    const alias = document.getElementById("alias").value.trim();
+
+    try {
+      const res = await fetch("/api/shorten", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, alias: alias || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Алдаа гарлаа.");
+      showResult(data);
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.classList.add("err");
+      result.classList.remove("show");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Богиносгох";
+    }
+  });
+
+  function showResult(data) {
+    shortUrlEl.textContent = data.shortUrl;
+    shortUrlEl.href = data.shortUrl;
+    origEl.textContent = "Анхны линк: " + data.originalUrl;
+
+    const longLen = data.originalUrl.length;
+    const shortLen = data.shortUrl.length;
+    document.getElementById("cntLong").textContent = longLen + " т";
+    document.getElementById("cntShort").textContent = shortLen + " т";
+    const pct = Math.round((1 - shortLen / longLen) * 100);
+    document.getElementById("saved").textContent =
+      pct > 0 ? pct + "% богиносголоо" : "Линк аль хэдийн богино байна";
+
+    result.classList.add("show");
+    // Баганын анимэйшн
+    const barLong = document.getElementById("barLong");
+    const barShort = document.getElementById("barShort");
+    barLong.style.width = "0"; barShort.style.width = "0";
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      barLong.style.width = "100%";
+      barShort.style.width = Math.max(6, (shortLen / longLen) * 100) + "%";
+    }));
+
+    copyBtn.textContent = "Хуулах";
+    copyBtn.classList.remove("done");
+  }
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(shortUrlEl.textContent);
+      copyBtn.textContent = "Хуулагдлаа ✓";
+      copyBtn.classList.add("done");
+    } catch {
+      copyBtn.textContent = "Гараар хуулна уу";
+    }
+  });
+</script>
+</body>
+</html>
